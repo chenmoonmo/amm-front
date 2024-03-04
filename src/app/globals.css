@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body * {
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+}
+
+body {
+  @apply min-h-screen !bg-system;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.radix-themes {
+  --default-font-family: Poppins, sans-serif;
+  color: #e0e0e0 !important;
+}
+
+.wallet-adapter-modal-button-close {
+  z-index: 100;
+}
