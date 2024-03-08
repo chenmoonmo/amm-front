@@ -6,6 +6,8 @@ import { ClusterProvider } from "@/components/cluster-data-access";
 import { ReactQueryStreamedHydration } from "@tanstack/react-query-next-experimental";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
+import "@radix-ui/themes/styles.css";
+
 export const Provider: FC<{
   children: ReactNode;
 }> = ({ children }) => {

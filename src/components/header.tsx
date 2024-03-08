@@ -9,8 +9,8 @@ const Navs = [
     href: "/",
   },
   {
-    name: "Pool",
-    href: "/pool",
+    name: "Liquidity",
+    href: "/liquidity",
   },
 ];
 
@@ -58,9 +58,7 @@ export const Header = () => {
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <WalletButton />
-      </div>
+      <WalletButton />
     </header>
   );
 };
