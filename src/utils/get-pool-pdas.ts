@@ -1,6 +1,6 @@
 import * as web3 from "@solana/web3.js";
 
-export const getPoolPDAs = async (token0: string, token1: string) => {
+export const getPoolPDAs = (token0: string, token1: string) => {
   const programID = process.env.NEXT_PUBLIC_PROGRAM_ID as string;
 
   const [mint0, mint1] = [
@@ -8,24 +8,24 @@ export const getPoolPDAs = async (token0: string, token1: string) => {
     new web3.PublicKey(token1),
   ];
 
-  let [poolState, poolState_b] = await web3.PublicKey.findProgramAddressSync(
+  let [poolState, poolState_b] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from("pool_state"), mint0.toBuffer(), mint1.toBuffer()],
     new web3.PublicKey(programID)
   );
 
-  let [authority, authority_b] = await web3.PublicKey.findProgramAddressSync(
+  let [authority, authority_b] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from("authority"), poolState.toBuffer()],
     new web3.PublicKey(programID)
   );
-  let [vault0, vault0_b] = await web3.PublicKey.findProgramAddressSync(
+  let [vault0, vault0_b] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from("vault0"), poolState.toBuffer()],
     new web3.PublicKey(programID)
   );
-  let [vault1, vault1_b] = await web3.PublicKey.findProgramAddressSync(
+  let [vault1, vault1_b] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from("vault1"), poolState.toBuffer()],
     new web3.PublicKey(programID)
   );
-  let [poolMint, poolMint_b] = await web3.PublicKey.findProgramAddressSync(
+  let [poolMint, poolMint_b] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from("pool_mint"), poolState.toBuffer()],
     new web3.PublicKey(programID)
   );

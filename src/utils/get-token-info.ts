@@ -50,9 +50,6 @@ export const getTokenInfo = async (
       new web3.PublicKey(address),
       user
     );
-    // TODO:
-    // 导出 ata
-    // 如果不存在ata
     const balance = await connection.getTokenAccountBalance(tokenAta);
 
     decimals = balance.value.decimals;

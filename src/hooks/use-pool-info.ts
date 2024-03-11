@@ -1,45 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
-import * as web3 from "@solana/web3.js";
-import * as token from "@solana/spl-token";
 import { useAnchorProvider } from "@/components/solana-provider";
-import { getPoolPDAs } from "@/utils";
+import { getTokenInfo } from "@/utils";
 import { useDexProgram } from "./use-dex-program";
-import { useBalance } from "./use-balance";
-
-type PoolInfo = {
-  poolState: web3.PublicKey;
-  authority: web3.PublicKey;
-  vault0: web3.PublicKey;
-  vault1: web3.PublicKey;
-  poolMint: web3.PublicKey;
-  mint0: web3.PublicKey;
-  mint1: web3.PublicKey;
-  token0Balance: web3.TokenAmount;
-  token1Balance: web3.TokenAmount;
-  poolMintBalance: web3.TokenAmount;
-};
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import * as token from "@solana/spl-token";
+import { usePool } from "./use-pool";
 
 export const usePoolInfo = (token0: string, token1: string) => {
   const provider = useAnchorProvider();
   const program = useDexProgram();
-
-  const { data: token0Info } = useBalance(token0);
-  const { data: token1Info } = useBalance(token1);
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const { data: pdas } = usePool(token0, token1);
 
   return useQuery({
-    queryKey: ["pool-info", token0, token1],
+    queryKey: ["pool-info", pdas?.poolState],
     queryFn: async () => {
-      const {
-        poolState: poolStatePDA,
-        vault0,
-        vault1,
-        poolMint,
-      } = await getPoolPDAs(token0, token1);
-
+      const { poolState: poolStatePDA, vault0, vault1, poolMint } = pdas!;
       try {
-        const poolState = await program.account.poolState.fetch(poolStatePDA);
+        let poolState = await program.account.poolState.fetch(poolStatePDA);
         const { mint0, mint1, totalAmountMinted } = poolState;
-        // if poolstate exists then get pool vaults and pool mint balance
 
         const vault0Balance = (
           await provider.connection.getTokenAccountBalance(vault0)
@@ -48,21 +28,48 @@ export const usePoolInfo = (token0: string, token1: string) => {
           await provider.connection.getTokenAccountBalance(vault1)
         ).value;
 
+        const token0Info = await getTokenInfo(
+          mint0.toBase58(),
+          connection,
+          publicKey
+        );
+        const token1Info = await getTokenInfo(
+          mint1.toBase58(),
+          connection,
+          publicKey
+        );
+
+        const userPoolAta = await token.getAssociatedTokenAddress(
+          poolMint,
+          publicKey!
+        );
+
+        const userLPBalance = (
+          await connection.getTokenAccountBalance(userPoolAta)
+        )?.value.uiAmount;
+
         return {
+          pdas,
           token0: mint0,
           token1: mint1,
-          lpAmount: totalAmountMinted,
-          token0Amount: vault0Balance,
-          token1Amount: valut1Balance,
-          token0Info,
-          token1Info,
+          lpAddress: poolMint,
+          userLPBalance: userLPBalance ?? 0,
+          lpAmount: totalAmountMinted.toNumber() / 10 ** 9,
+          token0Amount: vault0Balance.uiAmount ?? 0,
+          token1Amount: valut1Balance.uiAmount ?? 0,
+          token0Decimals: token0Info?.decimals ?? 9,
+          token1Decimals: token1Info?.decimals ?? 9,
+          token0Symbol: token0Info?.symbol ?? "",
+          token1Symbol: token1Info?.symbol ?? "",
+          poolName: `${token0Info?.symbol}/${token1Info?.symbol}`,
           price: valut1Balance.uiAmount! / vault0Balance.uiAmount!,
         };
       } catch (e) {
+        // if catched, then pool does not exist
         console.log(e);
         return null;
       }
     },
-    enabled: !!token0 && !!token1,
+    enabled: pdas !== null,
   });
 };

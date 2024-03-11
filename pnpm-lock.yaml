@@ -44,6 +44,9 @@ dependencies:
   '@tanstack/react-query-next-experimental':
     specifier: ^5.24.7
     version: 5.24.8(@tanstack/react-query@5.24.8)(next@14.1.1)(react@18.2.0)
+  classnames:
+    specifier: ^2.5.1
+    version: 2.5.1
   framer-motion:
     specifier: ^11.0.8
     version: 11.0.8(react-dom@18.2.0)(react@18.2.0)

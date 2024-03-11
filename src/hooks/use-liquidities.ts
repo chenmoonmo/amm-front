@@ -3,6 +3,7 @@ import { useDexProgram } from "./use-dex-program";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
+import { getPoolPDAs, getTokenInfo } from "@/utils";
 
 export const useLiquidities = () => {
   const { publicKey } = useWallet();
@@ -12,25 +13,12 @@ export const useLiquidities = () => {
   return useQuery({
     queryKey: ["liquidity", publicKey],
     queryFn: async () => {
-      const programID = program.programId;
       const pools = await program.account.poolState.all();
       const promises = pools.map(async (item) => {
         const { mint0, mint1, totalAmountMinted } = item.account;
-        const poolState = item.publicKey;
+        const pdas = getPoolPDAs(mint0.toBase58(), mint1.toBase58());
 
-        let [vault0, vault0_b] = await web3.PublicKey.findProgramAddressSync(
-          [Buffer.from("vault0"), poolState.toBuffer()],
-          programID
-        );
-        let [vault1, vault1_b] = await web3.PublicKey.findProgramAddressSync(
-          [Buffer.from("vault1"), poolState.toBuffer()],
-          programID
-        );
-        let [poolMint, poolMint_b] =
-          await web3.PublicKey.findProgramAddressSync(
-            [Buffer.from("pool_mint"), poolState.toBuffer()],
-            programID
-          );
+        const { vault0, vault1, poolMint } = pdas;
 
         const poolMintATA = await token.getAssociatedTokenAddress(
           poolMint,
@@ -57,11 +45,27 @@ export const useLiquidities = () => {
         const userToken0 = share * token0Balance.uiAmount!;
         const userToken1 = share * token1Balance.uiAmount!;
 
-        //  TODO: 暴露池子信息
+        const token0Info = await getTokenInfo(
+          mint0.toBase58(),
+          connection,
+          publicKey
+        );
+        const token1Info = await getTokenInfo(
+          mint1.toBase58(),
+          connection,
+          publicKey
+        );
+
         return {
           userToken0,
           userToken1,
           share,
+          token0: mint0,
+          token1: mint1,
+          token0Symbol: token0Info?.symbol,
+          token1Symbol: token1Info?.symbol,
+          poolName: `${token0Info?.symbol}/${token1Info?.symbol}`,
+          pdas,
         };
       });
 

@@ -20,11 +20,10 @@ export default function Home() {
     token1Amount,
     setToken1Amount,
     shareOfPool,
-    initPool,
+    addLiquidity,
   } = useAddLiq();
 
-  const {error} = useLiquidities();
-  console.log(error)
+  const { data: myLiquidities } = useLiquidities();
 
   const token0Symbol = token0Info?.symbol;
   const token1Symbol = token1Info?.symbol;
@@ -123,7 +122,7 @@ export default function Home() {
         <Button
           size="4"
           className="w-full"
-          onClick={initPool}
+          onClick={() => addLiquidity()}
           disabled={!enbaled}
         >
           {buttonText}
@@ -132,7 +131,9 @@ export default function Home() {
       <Heading size="4" weight="bold" className="!mt-5">
         Your Liquidity
       </Heading>
-      <LiqCard />
+      {myLiquidities?.map((item) => {
+        return <LiqCard key={item?.poolName} data={item} />;
+      })}
     </main>
   );
 }

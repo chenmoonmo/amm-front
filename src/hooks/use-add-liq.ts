@@ -1,7 +1,6 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
-import { useAnchorProvider } from "@/components/solana-provider";
 import { getPoolPDAs } from "@/utils";
 import { usePoolInfo } from "./use-pool-info";
 import { useMemo, useState } from "react";
@@ -9,11 +8,13 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useBalance } from "./use-balance";
 import { useDexProgram } from "./use-dex-program";
 import { BN } from "@coral-xyz/anchor";
+import toast from "react-hot-toast";
 
 export const useAddLiq = () => {
-  const provider = useAnchorProvider();
+  const client = useQueryClient();
+
   const { connection } = useConnection();
-  const { sendTransaction, signTransaction, publicKey } = useWallet();
+  const { sendTransaction, publicKey } = useWallet();
   const program = useDexProgram();
 
   const [token0, setToken0] = useState("");
@@ -32,7 +33,7 @@ export const useAddLiq = () => {
   const shareOfPool = useMemo(() => {
     if (!isPoolInitialized) return 1;
 
-    let percent =+token0Amount / (poolInfo?.token0Amount.uiAmount! + +token0Amount);
+    let percent = +token0Amount / (poolInfo?.token0Amount! + +token0Amount);
 
     return Math.min(percent, 1);
   }, [isPoolInitialized, poolInfo, token0Amount]);
@@ -50,11 +51,12 @@ export const useAddLiq = () => {
       // X / Y = total_TokenA / total_TokenB
       // y = (X * total_TokenB) / total_TokenA
       // x = (Y * total_TokenA) / total_TokenB
+      // TODO: remove bn
       setToken1Amount(
         // y
         (
-          (BigInt(amount) * BigInt(token1Amount.uiAmount!)) /
-          BigInt(token0Amount.uiAmount!)
+          (BigInt(amount) * BigInt(token1Amount!)) /
+          BigInt(token0Amount!)
         ).toString()
       );
     }
@@ -73,87 +75,136 @@ export const useAddLiq = () => {
       setToken0Amount(
         //x
         (
-          (BigInt(amount) * BigInt(token0Amount.uiAmount!)) /
-          BigInt(token1Amount.uiAmount!)
+          (BigInt(amount) * BigInt(token0Amount!)) /
+          BigInt(token1Amount!)
         ).toString()
       );
     }
   };
 
-  const handleInitPool = async () => {
-    const transaction = new web3.Transaction();
+  const { mutateAsync } = useMutation({
+    mutationKey: ["addLiquidity", token0, token1],
+    mutationFn: async () => {
+      const transaction = new web3.Transaction();
+      // 从 poolInfo 中获取, 如果不存在则为创建 getPoolPDAs
+      const { poolState, authority, vault0, vault1, poolMint } =
+        poolInfo?.pdas ?? getPoolPDAs(token0, token1);
 
-    const { poolState, authority, vault0, vault1, poolMint } =
-      await getPoolPDAs(token0, token1);
+      if (!isPoolInitialized) {
+        const initPoolInstruction = await program.methods
+          .initializePool()
+          .accounts({
+            mint0: token0,
+            mint1: token1,
+            poolState,
+            poolAuthority: authority,
+            vault0,
+            vault1,
+            poolMint,
+            payer: publicKey!,
+            systemProgram: web3.SystemProgram.programId,
+            tokenProgram: token.TOKEN_PROGRAM_ID,
+          })
+          .instruction();
 
-    if (!isPoolInitialized) {
-      const initPoolInstruction = await program.methods
-        .initializePool()
+        transaction.add(initPoolInstruction);
+      }
+
+      // user token0 token1 and poolmint ata accounts
+      const poolMintATA = await token.getAssociatedTokenAddress(
+        poolMint,
+        publicKey!
+      );
+
+      // is poolmint exist
+      const poolMintATAInfo = await connection.getAccountInfo(poolMintATA);
+
+      if (poolMintATAInfo === null) {
+        // createAssociatedTokenAccount poolmint account instruction
+        const createAssociatedTokenAccountInstruction =
+          token.createAssociatedTokenAccountInstruction(
+            publicKey!,
+            poolMintATA,
+            publicKey!,
+            poolMint
+          );
+
+        transaction.add(createAssociatedTokenAccountInstruction);
+      }
+
+      // token0 和 pool token0 是否一致， 否则交换方向 , 只有在池子已经存在的时候才需要交换
+      let amounts = [
+        new BN(+token0Amount * 10 ** token0Info?.decimals!),
+        new BN(+token1Amount * 10 ** token1Info?.decimals!),
+      ];
+      let userATAs = [token0Info?.ataAddress!, token1Info?.ataAddress!];
+
+      if (
+        isPoolInitialized &&
+        !poolInfo!.token0.equals(new web3.PublicKey(token0))
+      ) {
+        amounts = [
+          new BN(+token1Amount * 10 ** token1Info?.decimals!),
+          new BN(+token0Amount * 10 ** token0Info?.decimals!),
+        ];
+        userATAs = [token1Info?.ataAddress!, token0Info?.ataAddress!];
+      }
+
+      const addLiquidityInstruction = await program.methods
+        .addLiquidity(amounts[0], amounts[1])
         .accounts({
-          mint0: token0,
-          mint1: token1,
           poolState,
           poolAuthority: authority,
           vault0,
           vault1,
           poolMint,
-          payer: publicKey!,
-          systemProgram: web3.SystemProgram.programId,
+          user0: userATAs[0],
+          user1: userATAs[1],
+          userPoolAta: poolMintATA,
+          owner: publicKey!,
           tokenProgram: token.TOKEN_PROGRAM_ID,
         })
         .instruction();
 
-      transaction.add(initPoolInstruction);
-    }
+      transaction.add(addLiquidityInstruction);
+      let signature: web3.TransactionSignature = "";
 
-    // user token0 token1 and poolmint ata accounts
-    const poolMintATA = await token.getAssociatedTokenAddress(
-      poolMint,
-      publicKey!
-    );
+      try {
+        const latestBlockhash = await connection.getLatestBlockhash();
+        signature = await sendTransaction(transaction, connection);
 
-    // is poolmint exist
-    const poolMintATAInfo = await provider.connection.getAccountInfo(
-      poolMintATA
-    );
-
-    if (!poolMintATAInfo) {
-      // createAssociatedTokenAccount poolmint account instruction
-      const createAssociatedTokenAccountInstruction =
-        token.createAssociatedTokenAccountInstruction(
-          publicKey!,
-          poolMintATA,
-          publicKey!,
-          poolMint
+        await connection.confirmTransaction(
+          { signature, ...latestBlockhash },
+          "confirmed"
         );
-
-      transaction.add(createAssociatedTokenAccountInstruction);
-    }
-
-    const addLiquidityInstruction = await program.methods
-      .addLiquidity(
-        // TODO: BN and decimal
-        new BN(+token0Amount * 10 ** token0Info?.decimals!),
-        new BN(+token1Amount * 10 ** token1Info?.decimals!)
-      )
-      .accounts({
-        poolState,
-        poolAuthority: authority,
-        vault0,
-        vault1,
-        poolMint,
-        user0: token0Info?.ataAddress!,
-        user1: token1Info?.ataAddress!,
-        userPoolAta: poolMintATA,
-        owner: publicKey!,
-        tokenProgram: token.TOKEN_PROGRAM_ID,
-      })
-      .instruction();
-
-    transaction.add(addLiquidityInstruction);
-
-    await sendTransaction(transaction, connection);
-  };
+        console.log(signature);
+        return signature;
+      } catch (error) {
+        console.log("error", `Transaction failed! ${error}`, signature);
+        return;
+      }
+    },
+    onSuccess: () => {
+      // TODO: success ui
+      return Promise.all([
+        client.invalidateQueries({
+          queryKey: ["pool-info", token0, token1],
+        }),
+        client.invalidateQueries({
+          queryKey: ["tokenInfo", token0, publicKey],
+        }),
+        client.invalidateQueries({
+          queryKey: ["tokenInfo", token1, publicKey],
+        }),
+        client.invalidateQueries({
+          queryKey: ["liquidity", publicKey],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(`Transaction failed! ${error}`);
+    },
+  });
 
   return {
     poolInfo,
@@ -168,6 +219,6 @@ export const useAddLiq = () => {
     token0Info,
     token1Info,
     shareOfPool,
-    initPool: handleInitPool,
+    addLiquidity: mutateAsync,
   };
 };
