@@ -24,6 +24,7 @@ export const usePoolInfo = (token0: string, token1: string) => {
         const vault0Balance = (
           await provider.connection.getTokenAccountBalance(vault0)
         ).value;
+        
         const valut1Balance = (
           await provider.connection.getTokenAccountBalance(vault1)
         ).value;

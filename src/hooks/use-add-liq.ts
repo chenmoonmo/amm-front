@@ -28,7 +28,7 @@ export const useAddLiq = () => {
 
   const { data: poolInfo } = usePoolInfo(token0, token1);
   // if poolInfo is null then the pool does not exist
-  const isPoolInitialized = useMemo(() => poolInfo !== null, [poolInfo]);
+  const isPoolInitialized = useMemo(() => !!poolInfo, [poolInfo]);
 
   const shareOfPool = useMemo(() => {
     if (!isPoolInitialized) return 1;

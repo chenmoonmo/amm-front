@@ -10,7 +10,7 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { ReactNode, useCallback, useMemo } from "react";
 import { toWalletAdapterNetwork, useCluster } from "./cluster-data-access";
 
@@ -31,7 +31,7 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
         network: toWalletAdapterNetwork(cluster?.network),
       }),
     ],
-    [cluster]
+    [cluster?.network]
   );
 
   const onError = useCallback((error: WalletError) => {
