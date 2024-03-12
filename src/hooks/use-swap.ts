@@ -73,10 +73,10 @@ export const useSwap = () => {
   };
 
   const price = useMemo(() => {
-    if(tokenOutAmount && tokenInAmount){
+    if (tokenOutAmount && tokenInAmount) {
       return +tokenOutAmount / +tokenInAmount;
     } else {
-      return null
+      return null;
     }
   }, [tokenInAmount, tokenOutAmount]);
 

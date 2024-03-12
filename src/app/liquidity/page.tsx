@@ -11,8 +11,8 @@ export default function Home() {
   const {
     poolInfo,
     token0,
-    setToken0,
     token1,
+    setToken0,
     setToken1,
     token0Info,
     token1Info,
@@ -63,6 +63,7 @@ export default function Home() {
             type="text"
             placeholder="0.0"
             className="bg-transparent outline-none text-2xl font-mono font-semibold"
+            disabled={!token0 || !token1}
             value={token0Amount}
             onChange={(e) => setToken0Amount(formatInput(e.target.value))}
           />
@@ -79,6 +80,7 @@ export default function Home() {
             type="text"
             placeholder="0.0"
             className="bg-transparent outline-none text-2xl font-mono font-semibold"
+            disabled={!token0 || !token1}
             value={token1Amount}
             onChange={(e) => setToken1Amount(formatInput(e.target.value))}
           />

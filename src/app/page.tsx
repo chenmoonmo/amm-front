@@ -3,6 +3,7 @@ import { TokenSelector } from "@/components/token-selector";
 import { useSwap } from "@/hooks/use-swap";
 import { formatAmount, formatInput } from "@/utils/format";
 import { Button, Card } from "@radix-ui/themes";
+import { useMemo } from "react";
 
 export default function Home() {
   const {
@@ -23,6 +24,11 @@ export default function Home() {
   } = useSwap();
 
   console.log(poolInfo);
+
+  const enabled = useMemo(
+    () => poolInfo && tokenInAmount && tokenOutAmount,
+    [poolInfo, tokenInAmount, tokenOutAmount]
+  );
 
   return (
     <main className="w-full flex flex-col items-center mt-20">
@@ -89,7 +95,12 @@ export default function Home() {
             1 {tokenInInfo?.symbol} = {price} {tokenOutInfo?.symbol}
           </div>
         )}
-        <Button size="4" className="w-full !mt-4" onClick={() => swap()}>
+        <Button
+          disabled={!enabled}
+          size="4"
+          className="w-full !mt-4"
+          onClick={() => swap()}
+        >
           Swap
         </Button>
       </Card>

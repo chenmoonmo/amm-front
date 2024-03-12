@@ -69,6 +69,20 @@ export const useAddLiq = () => {
     }
   };
 
+  const handleToken0Change = (token: string) => {
+    if (token1 === token) {
+      setToken1(token0);
+    }
+    setToken0(token);
+  };
+
+  const handleToken1Change = (token: string) => {
+    if (token0 === token) {
+      setToken0(token1);
+    }
+    setToken1(token);
+  };
+
   const { mutateAsync } = useMutation({
     mutationKey: ["addLiquidity", token0, token1],
     mutationFn: async () => {
@@ -196,9 +210,9 @@ export const useAddLiq = () => {
   return {
     poolInfo,
     token0,
-    setToken0,
+    setToken0: handleToken0Change,
     token1,
-    setToken1,
+    setToken1: handleToken1Change,
     token0Amount,
     setToken0Amount: handleToken0AmountChange,
     token1Amount,

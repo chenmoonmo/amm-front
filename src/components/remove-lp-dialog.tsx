@@ -3,6 +3,7 @@ import { Button, Dialog, Heading, Slider } from "@radix-ui/themes";
 import { FC, ReactNode, useMemo, useState } from "react";
 import classnames from "classnames";
 import { useRemoveLiq } from "@/hooks/use-remove-liq";
+import { formatAmount } from "@/utils/format";
 
 export const RemoveLpDialog: FC<{
   children: ReactNode;
@@ -29,6 +30,11 @@ export const RemoveLpDialog: FC<{
     if (!poolInfo) return 0;
     return (removeLp / 100) * poolInfo.lpAmount;
   }, [poolInfo, removeLp]);
+
+  const enabled = useMemo(
+    () => poolInfo && removeLPNumber > 0,
+    [poolInfo, removeLPNumber]
+  );
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -66,7 +72,6 @@ export const RemoveLpDialog: FC<{
               ))}
             </div>
           </div>
-
           <Slider
             value={[removeLp]}
             step={1}
@@ -78,14 +83,15 @@ export const RemoveLpDialog: FC<{
         <div className="bg-[#2C2F38] p-3 rounded-lg mt-4">
           <div className="flex justify-between w-full">
             <div className="font-medium">{poolInfo?.token0Symbol}</div>
-            <div>{token0Receive}</div>
+            <div>{formatAmount(token0Receive)}</div>
           </div>
           <div className="flex justify-between w-full">
             <div className="font-medium">{poolInfo?.token1Symbol}</div>
-            <div>{token1Receive}</div>
+            <div>{formatAmount(token1Receive)}</div>
           </div>
         </div>
         <Button
+          disabled={!enabled}
           size="3"
           className="w-full !mt-6"
           onClick={() => removeLiq(removeLPNumber)}
