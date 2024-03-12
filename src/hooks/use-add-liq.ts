@@ -51,14 +51,7 @@ export const useAddLiq = () => {
       // X / Y = total_TokenA / total_TokenB
       // y = (X * total_TokenB) / total_TokenA
       // x = (Y * total_TokenA) / total_TokenB
-      // TODO: remove bn
-      setToken1Amount(
-        // y
-        (
-          (BigInt(amount) * BigInt(token1Amount!)) /
-          BigInt(token0Amount!)
-        ).toString()
-      );
+      setToken1Amount(((+amount * token1Amount) / token0Amount).toString());
     }
   };
 
@@ -72,13 +65,7 @@ export const useAddLiq = () => {
 
     if (isPoolInitialized) {
       const { token0Amount, token1Amount } = poolInfo!;
-      setToken0Amount(
-        //x
-        (
-          (BigInt(amount) * BigInt(token0Amount!)) /
-          BigInt(token1Amount!)
-        ).toString()
-      );
+      setToken0Amount(((+amount * token0Amount) / token1Amount).toString());
     }
   };
 

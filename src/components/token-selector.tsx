@@ -3,10 +3,12 @@ import { FC, useCallback, useMemo, useState } from "react";
 import { Dialog, ScrollArea } from "@radix-ui/themes";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { getTokenInfo } from "@/utils";
 import { Avatar } from "./avatar";
-import uniqBy from "lodash/uniqBy";
+import uniq from "lodash/uniq";
+import { atom, useAtom } from "jotai";
+import { formatAmount } from "@/utils/format";
 
 type TokenSelectProps = {
   value?: string;
@@ -28,50 +30,60 @@ const variants = {
   },
 };
 
+const tokensAddressAtom = atom<string[]>([]);
+
 export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
+  const [tokensAddress, setTokensAddress] = useAtom(tokensAddressAtom);
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { data: tokens } = useQuery({
-    queryKey: ["tokens", search, publicKey],
-    queryFn: async () => {
-      if (!search) return [];
-      const tokenInfo = await getTokenInfo(search, connection, publicKey);
-      return tokenInfo ? [tokenInfo] : [];
-    },
+  const result = useQueries({
+    queries: uniq(
+      tokensAddress.concat([search, value!]).filter((i) => !!i)
+    ).map((item) => {
+      return {
+        queryKey: ["tokenInfo", item, publicKey],
+        queryFn: () => getTokenInfo(item, connection, publicKey),
+      };
+    }),
   });
 
-  const { data: currentToken } = useQuery({
-    queryKey: ["token", value, publicKey],
-    queryFn: async () => {
-      if (!value) return null;
-      const tokenInfo = await getTokenInfo(value, connection, publicKey);
-      return tokenInfo;
-    },
-  });
+  const currentToken = useMemo(
+    () => result.map((r) => r.data).find((t) => t?.address === value),
+    [result, value]
+  );
 
-  const filteredTokens = useMemo(() => {
-    return uniqBy(
-      [currentToken].concat(tokens).filter((t) => t),
-      "address"
-    ) as {
-      name: string;
-      symbol: string;
-      address: string;
-      balance: number;
-    }[];
-  }, [currentToken, tokens]);
+  const filteredTokens = useMemo(
+    () =>
+      result
+        .map((r) => r.data)
+        .filter((t) => {
+          if (search === "") return !!t;
+          return (
+            t?.symbol.toLowerCase().includes(search.toLowerCase()) ||
+            t?.name.toLowerCase().includes(search.toLowerCase()) ||
+            t?.address.toLowerCase().includes(search.toLowerCase()) ||
+            (value && t?.address.toLowerCase().includes(value.toLowerCase()))
+          );
+        }),
+    [result, search, value]
+  );
 
   const handleSelect = useCallback(
     (select: string) => {
       setOpen(false);
       onChange(select);
       setSearch("");
+      setTokensAddress((prev) => {
+        if (prev.includes(select)) return prev;
+        return [select, ...prev];
+      });
     },
-    [onChange]
+    [onChange, setTokensAddress]
   );
 
   return (
@@ -173,12 +185,13 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
         </div>
         <ScrollArea type="scroll" className="flex-1 pt-[10px]">
           {filteredTokens?.map((token) => {
+            if (!token) return null;
             return (
               <div
                 key={token.address}
                 data-address={token.address}
                 className="group flex items-center justify-between px-5 py-[6px] cursor-pointer text-secondary hover:text-white"
-                onClick={() => handleSelect(token.address)}
+                onClick={() => handleSelect(token.address!)}
               >
                 <div className="flex items-center gap-2">
                   <Avatar
@@ -191,7 +204,7 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-[6px] text-sm">
-                  {token.balance}
+                  {formatAmount(token.balance)}
                   {value === token.address && (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

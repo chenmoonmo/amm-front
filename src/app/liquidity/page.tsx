@@ -5,6 +5,7 @@ import { Button, Card, Heading, Text } from "@radix-ui/themes";
 import { useAddLiq } from "@/hooks/use-add-liq";
 import { useMemo } from "react";
 import { useLiquidities } from "@/hooks/use-liquidities";
+import { formatInput, formatAmount, foramtPrecent } from "@/utils/format";
 
 export default function Home() {
   const {
@@ -63,12 +64,11 @@ export default function Home() {
             placeholder="0.0"
             className="bg-transparent outline-none text-2xl font-mono font-semibold"
             value={token0Amount}
-            // TODO: format the value
-            onChange={(e) => setToken0Amount(e.target.value)}
+            onChange={(e) => setToken0Amount(formatInput(e.target.value))}
           />
           <div className="flex-shrink-0 flex flex-col items-end">
             <div className="text-right text-sm mb-1">
-              balance: {token0Info?.balance}
+              balance: {formatAmount(token0Info?.balance)}
             </div>
             <TokenSelector value={token0} onChange={setToken0} />
           </div>
@@ -80,12 +80,11 @@ export default function Home() {
             placeholder="0.0"
             className="bg-transparent outline-none text-2xl font-mono font-semibold"
             value={token1Amount}
-            // TODO: format the value
-            onChange={(e) => setToken1Amount(e.target.value)}
+            onChange={(e) => setToken1Amount(formatInput(e.target.value))}
           />
           <div className="flex-shrink-0 flex flex-col items-end">
             <div className="text-right text-sm mb-1">
-              balance: {token1Info?.balance}
+              balance: {formatAmount(token1Info?.balance)}
             </div>
             <TokenSelector value={token1} onChange={setToken1} />
           </div>
@@ -98,20 +97,19 @@ export default function Home() {
             <div className="mt-2 mb-6">
               <div className="flex justify-between bg-[#2C2F38] p-4 rounded-lg text-center text-sm">
                 <div>
-                  <div>{price}</div>
+                  <div>{formatAmount(price)}</div>
                   <div className="font-semibold">
                     {token0Symbol} per {token1Symbol}
                   </div>
                 </div>
                 <div>
-                  <div>{1 / price}</div>
+                  <div>{formatAmount(1 / price)}</div>
                   <div className="font-semibold">
                     {token1Symbol} per {token0Symbol}
                   </div>
                 </div>
                 <div>
-                  {/* TODO: format */}
-                  <div>{shareOfPool * 100}%</div>
+                  <div>{foramtPrecent(shareOfPool * 100)}%</div>
                   <div className="font-semibold">Share of pool</div>
                 </div>
               </div>

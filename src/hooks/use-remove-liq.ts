@@ -17,10 +17,11 @@ export const useRemoveLiq = (token0: string, token1: string) => {
   const { mutateAsync } = useMutation({
     mutationKey: ["removeLiq", token0, token1],
     mutationFn: async (lpAmount: number) => {
-      const { pdas } = poolInfo!;
+      const { poolMint, poolState, authority, vault0, vault1 } =
+        poolInfo?.pdas!;
 
-      const poolMintATA = await token.getAssociatedTokenAddress(
-        pdas.poolMint,
+      const userPoolAta = await token.getAssociatedTokenAddress(
+        poolMint,
         publicKey!
       );
 
@@ -43,12 +44,12 @@ export const useRemoveLiq = (token0: string, token1: string) => {
           // TODO: 计算移除的 LP 数量
           .removeLiquidity(new BN(lpAmount * 10 ** 9))
           .accounts({
-            poolState: pdas.poolState,
-            poolAuthority: pdas.authority,
-            poolMint: pdas.poolMint,
-            vault0: pdas.vault0,
-            vault1: pdas.vault1,
-            userPoolAta: poolMintATA,
+            poolAuthority: authority,
+            poolState,
+            poolMint,
+            vault0,
+            vault1,
+            userPoolAta,
             user0,
             user1,
           })

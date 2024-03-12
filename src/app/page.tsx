@@ -1,26 +1,28 @@
 "use client";
 import { TokenSelector } from "@/components/token-selector";
-import { useBalance } from "@/hooks/use-balance";
 import { useSwap } from "@/hooks/use-swap";
+import { formatAmount, formatInput } from "@/utils/format";
 import { Button, Card } from "@radix-ui/themes";
-import { useState } from "react";
 
 export default function Home() {
-  const [tokenIn, setTokenIn] = useState("");
-  const [tokenOut, setTokenOut] = useState("");
-
-  const { data: tokenInInfo } = useBalance(tokenIn);
-  const { data: tokenOutInfo } = useBalance(tokenOut);
-
   const {
+    tokenIn,
+    tokenOut,
+    tokenInInfo,
+    tokenOutInfo,
+    setTokenIn,
+    setTokenOut,
     poolInfo,
-    price,
     tokenInAmount,
     tokenOutAmount,
     setTokenInAmount,
     setTokenOutAmount,
+    price,
     swap,
-  } = useSwap(tokenIn, tokenOut);
+    switchToken,
+  } = useSwap();
+
+  console.log(poolInfo);
 
   return (
     <main className="w-full flex flex-col items-center mt-20">
@@ -33,26 +35,23 @@ export default function Home() {
               placeholder="0.0"
               className="bg-transparent outline-none text-2xl font-mono font-semibold"
               value={tokenInAmount}
-              onChange={(e) => setTokenInAmount(e.target.value)}
+              onChange={(e) => setTokenInAmount(formatInput(e.target.value))}
             />
           </div>
           <div className="flex-shrink-0 flex flex-col items-end">
             <div className="text-right text-sm mb-1">
-              <span>balance: {tokenInInfo?.balance ?? "-"}</span>
+              <span>balance: {formatAmount(tokenInInfo?.balance)}</span>
+              {/*               
               <span className="ml-1 text-[var(--accent-9)] hover:text-[var(--accent-10)] cursor-pointer">
                 Max
-              </span>
+              </span> */}
             </div>
             <TokenSelector value={tokenIn} onChange={setTokenIn} />
           </div>
         </label>
         <div
           className="absolute left-1/2 -translate-y-1/4 -translate-x-1/2 flex items-center justify-center z-10 w-8 h-8 bg-[#2d3037] border-2 border-[#1f2127] rounded-md cursor-pointer"
-          onClick={() => {
-            const temp = tokenIn;
-            setTokenIn(tokenOut);
-            setTokenOut(temp);
-          }}
+          onClick={switchToken}
         >
           <svg
             width="12"
@@ -80,12 +79,12 @@ export default function Home() {
           </div>
           <div className="flex-shrink-0 flex flex-col items-end">
             <div className="text-right text-sm mb-1">
-              <span>balance: {tokenOutInfo?.balance ?? "-"}</span>
+              <span>balance: {formatAmount(tokenOutInfo?.balance)}</span>
             </div>
             <TokenSelector value={tokenOut} onChange={setTokenOut} />
           </div>
         </label>
-        {poolInfo && (
+        {price && (
           <div className="text-sm bg-[#2C2F38] mt-4 py-2 px-3 rounded-md">
             1 {tokenInInfo?.symbol} = {price} {tokenOutInfo?.symbol}
           </div>
