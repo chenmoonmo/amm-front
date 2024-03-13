@@ -1,17 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAnchorProvider } from "@/components/solana-provider";
-import { getTokenInfo } from "@/utils";
+import { getTokenInfos } from "@/utils";
 import { useDexProgram } from "./use-dex-program";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import * as token from "@solana/spl-token";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { usePool } from "./use-pool";
+import { useBalances } from "./use-balances";
 
 export const usePoolInfo = (token0: string, token1: string) => {
-  const provider = useAnchorProvider();
   const program = useDexProgram();
-  const { publicKey } = useWallet();
   const { connection } = useConnection();
   const { data: pdas } = usePool(token0, token1);
+  const { data: balances } = useBalances();
 
   return useQuery({
     queryKey: ["pool-info", pdas?.poolState],
@@ -21,45 +19,30 @@ export const usePoolInfo = (token0: string, token1: string) => {
         let poolState = await program.account.poolState.fetch(poolStatePDA);
         const { mint0, mint1, totalAmountMinted } = poolState;
 
-        const vault0Balance = (
-          await provider.connection.getTokenAccountBalance(vault0)
-        ).value;
-        
-        const valut1Balance = (
-          await provider.connection.getTokenAccountBalance(vault1)
-        ).value;
+        const [vault0Balance, valut1Balance] = (
+          await Promise.all(
+            [vault0, vault1].map((item) =>
+              connection.getTokenAccountBalance(item)
+            )
+          )
+        ).map((item) => item.value);
 
-        const token0Info = await getTokenInfo(
-          mint0.toBase58(),
-          connection,
-          publicKey
-        );
-        const token1Info = await getTokenInfo(
-          mint1.toBase58(),
-          connection,
-          publicKey
+        const [token0Info, token1Info] = await getTokenInfos(
+          [mint0, mint1],
+          connection
         );
 
-        const userPoolAta = await token.getAssociatedTokenAddress(
-          poolMint,
-          publicKey!
-        );
-
-        const userLPBalance = (
-          await connection.getTokenAccountBalance(userPoolAta)
-        )?.value.uiAmount;
+        const userLPBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
 
         return {
           pdas,
           token0: mint0,
           token1: mint1,
           lpAddress: poolMint,
-          userLPBalance: userLPBalance ?? 0,
+          userLPBalance: userLPBalance,
           lpAmount: totalAmountMinted.toNumber() / 10 ** 9,
           token0Amount: vault0Balance.uiAmount ?? 0,
           token1Amount: valut1Balance.uiAmount ?? 0,
-          token0Decimals: token0Info?.decimals ?? 9,
-          token1Decimals: token1Info?.decimals ?? 9,
           token0Symbol: token0Info?.symbol ?? "",
           token1Symbol: token1Info?.symbol ?? "",
           poolName: `${token0Info?.symbol}/${token1Info?.symbol}`,

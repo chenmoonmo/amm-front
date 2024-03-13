@@ -51,7 +51,12 @@ export const useAddLiq = () => {
       // X / Y = total_TokenA / total_TokenB
       // y = (X * total_TokenB) / total_TokenA
       // x = (Y * total_TokenA) / total_TokenB
-      setToken1Amount(((+amount * token1Amount) / token0Amount).toString());
+
+      const [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? [token1Amount, token0Amount]
+        : [token0Amount, token1Amount];
+
+      setToken1Amount(((+amount * x) / y).toString());
     }
   };
 
@@ -65,7 +70,12 @@ export const useAddLiq = () => {
 
     if (isPoolInitialized) {
       const { token0Amount, token1Amount } = poolInfo!;
-      setToken0Amount(((+amount * token0Amount) / token1Amount).toString());
+
+      const [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? [token0Amount, token1Amount]
+        : [token1Amount, token0Amount];
+
+      setToken0Amount(((+amount * x) / y).toString());
     }
   };
 

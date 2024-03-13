@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDexProgram } from "./use-dex-program";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import * as web3 from "@solana/web3.js";
-import * as token from "@solana/spl-token";
-import { getPoolPDAs, getTokenInfo } from "@/utils";
+import { getPoolPDAs, getTokenInfos } from "@/utils";
+import { useBalances } from "./use-balances";
 
 export const useLiquidities = () => {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const program = useDexProgram();
+  const { data: balances } = useBalances();
 
   return useQuery({
     queryKey: ["liquidity", publicKey],
@@ -16,44 +16,35 @@ export const useLiquidities = () => {
       const pools = await program.account.poolState.all();
       const promises = pools.map(async (item) => {
         const { mint0, mint1, totalAmountMinted } = item.account;
+
         const pdas = getPoolPDAs(mint0.toBase58(), mint1.toBase58());
 
         const { vault0, vault1, poolMint } = pdas;
 
-        const poolMintATA = await token.getAssociatedTokenAddress(
-          poolMint,
-          publicKey!
-        );
+        const userLpBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
 
-        const poolMintInfo = await connection.getAccountInfo(poolMintATA);
-
-        if (!poolMintInfo) {
+        if (userLpBalance === 0) {
           return null;
         }
 
         const lpBalance = totalAmountMinted / 10 ** 9;
-        const { value: userLpBalance } =
-          await connection.getTokenAccountBalance(poolMintATA);
-        const { value: token0Balance } =
-          await connection.getTokenAccountBalance(vault0);
 
-        const { value: token1Balance } =
-          await connection.getTokenAccountBalance(vault1);
+        const [token0Balance, token1Balance] = (
+          await Promise.all(
+            [vault0, vault1].map((item) =>
+              connection.getTokenAccountBalance(item)
+            )
+          )
+        ).map((item) => item.value);
 
-        const share = userLpBalance.uiAmount! / lpBalance;
+        const share = userLpBalance / lpBalance;
 
         const userToken0 = share * token0Balance.uiAmount!;
         const userToken1 = share * token1Balance.uiAmount!;
 
-        const token0Info = await getTokenInfo(
-          mint0.toBase58(),
-          connection,
-          publicKey
-        );
-        const token1Info = await getTokenInfo(
-          mint1.toBase58(),
-          connection,
-          publicKey
+        const [token0Info, token1Info] = await getTokenInfos(
+          [mint0, mint1],
+          connection
         );
 
         return {
@@ -72,6 +63,6 @@ export const useLiquidities = () => {
       const res = await Promise.all(promises);
       return res.filter((item) => item !== null);
     },
-    enabled: !!publicKey && !!program,
+    enabled: !!publicKey && !!program && !!balances,
   });
 };

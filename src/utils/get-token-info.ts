@@ -4,13 +4,9 @@ import * as token from "@solana/spl-token";
 
 export const getTokenInfo = async (
   address: string,
-  connection: web3.Connection,
-  user: web3.PublicKey | null
+  connection: web3.Connection
 ) => {
   let name: string, symbol: string, mintAddress: string;
-  let ataAddress: web3.PublicKey | null = null;
-  let accountBalance = 0;
-  let decimals = 9;
 
   // token 2022
   const metaplex = new Metaplex(connection);
@@ -20,27 +16,29 @@ export const getTokenInfo = async (
 
   name = nftMetadata.name;
   symbol = nftMetadata.symbol;
-  mintAddress = nftMetadata.mint.address.toBase58();
-
-  if (user) {
-    const tokenAta = await token.getAssociatedTokenAddress(
-      new web3.PublicKey(address),
-      user
-    );
-
-    const balance = await connection.getTokenAccountBalance(tokenAta);
-
-    decimals = balance.value.decimals;
-    accountBalance = balance.value.uiAmount!;
-    ataAddress = tokenAta;
-  }
 
   return {
     name,
     symbol,
-    decimals,
-    address: mintAddress,
-    balance: accountBalance,
-    ataAddress,
+    address,
   };
+};
+
+export const getTokenInfos = async (
+  mints: web3.PublicKey[],
+  connection: web3.Connection
+) => {
+  const metaplex = new Metaplex(connection);
+
+  const res = await metaplex.nfts().findAllByMintList({
+    mints,
+  });
+
+  return res.map((item, index) => {
+    return {
+      name: item?.name,
+      symbol: item?.symbol,
+      address: mints[index],
+    };
+  });
 };
