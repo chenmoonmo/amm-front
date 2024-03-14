@@ -3,7 +3,7 @@ import { TokenSelector } from "@/components/token-selector";
 import { useSwap } from "@/hooks/use-swap";
 import { formatAmount, formatInput } from "@/utils/format";
 import { Button, Card } from "@radix-ui/themes";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function Home() {
   const {
@@ -35,6 +35,10 @@ export default function Home() {
     }
     return ["Swap", true];
   }, [poolInfo, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);
+
+  useEffect(() => {
+    console.log("poolInfo", poolInfo);
+  }, [poolInfo]);
 
   return (
     <main className="w-full flex flex-col items-center mt-20">

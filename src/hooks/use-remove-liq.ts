@@ -8,7 +8,17 @@ import toast from "react-hot-toast";
 import { getPoolPDAs } from "@/utils";
 import { PublicKey } from "@solana/web3.js";
 
-export const useRemoveLiq = (token0: string, token1: string) => {
+type UseRemoveLiqType = {
+  token0: string;
+  token1: string;
+  onSuccess?: () => void;
+};
+
+export const useRemoveLiq = ({
+  token0,
+  token1,
+  onSuccess,
+}: UseRemoveLiqType) => {
   const client = useQueryClient();
   const program = useDexProgram();
 
@@ -70,6 +80,7 @@ export const useRemoveLiq = (token0: string, token1: string) => {
     },
     onSuccess: () => {
       // TODO: success ui
+      onSuccess?.();
       return Promise.all([
         client.invalidateQueries({
           queryKey: ["pool-info", token0, token1],

@@ -11,7 +11,11 @@ export const RemoveLpDialog = memo(
     const [open, setOpen] = useState(false);
     const [removeLp, setRemoveLp] = useState(50);
 
-    const { removeLiq } = useRemoveLiq(data.token0, data.token1);
+    const { removeLiq } = useRemoveLiq({
+      token0: data.token0,
+      token1: data.token1,
+      onSuccess: () => setOpen(false),
+    });
 
     const [token0Receive, token1Receive] = useMemo(() => {
       const { userToken0, userToken1 } = data;
