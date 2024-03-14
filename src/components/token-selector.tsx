@@ -1,5 +1,5 @@
 "use client";
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, memo, useCallback, useMemo, useState } from "react";
 import { Dialog, ScrollArea } from "@radix-ui/themes";
 import { motion } from "framer-motion";
 import { Avatar } from "./avatar";
@@ -55,6 +55,7 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
 
   const handleSelect = useCallback(
     (select: string) => {
+      if (value === select) return;
       setOpen(false);
       onChange(select);
       setSearch("");
@@ -63,7 +64,7 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
         return [select, ...prev];
       });
     },
-    [onChange, setTokensAddress]
+    [onChange, setTokensAddress, value]
   );
 
   return (
@@ -178,46 +179,54 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
   );
 };
 
-export const TokenItem: FC<{
-  address: string;
-  value?: string;
-  onSelect: (value: string) => void;
-}> = ({ address, value, onSelect }) => {
-  const { data: token } = useBalance(address);
+export const TokenItem = memo(
+  ({
+    address,
+    value,
+    onSelect,
+  }: {
+    address: string;
+    value?: string;
+    onSelect: (value: string) => void;
+  }) => {
+    const { data: token } = useBalance(address);
 
-  if (!token) return null;
+    if (!token) return null;
 
-  return (
-    <div
-      key={token?.address}
-      data-address={token?.address}
-      className="group flex items-center justify-between px-5 py-[6px] cursor-pointer text-secondary hover:text-white"
-      onClick={() => onSelect(token?.address!)}
-    >
-      <div className="flex items-center gap-2">
-        <Avatar size={34} className="contrast-50 group-hover:contrast-100" />
-        <div className="text-base font-medium">
-          <div>{token?.name}</div>
-          <div className="text-secondary text-sm">{token?.symbol}</div>
+    return (
+      <div
+        key={token?.address}
+        data-address={token?.address}
+        className="group flex items-center justify-between px-5 py-[6px] cursor-pointer text-secondary hover:text-white"
+        onClick={() => onSelect(token?.address!)}
+      >
+        <div className="flex items-center gap-2">
+          <Avatar size={34} className="contrast-50 group-hover:contrast-100" />
+          <div className="text-base font-medium">
+            <div>{token?.name}</div>
+            <div className="text-secondary text-sm">{token?.symbol}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-[6px] text-sm">
+          {formatAmount(token?.balance)}
+          {value === token?.address && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="11"
+              height="7"
+              viewBox="0 0 11 7"
+              fill="none"
+            >
+              <path
+                d="M3.92318 7C3.73859 7 3.56305 6.91809 3.44295 6.77554L0.15223 2.87296C-0.0750014 2.60341 -0.0443915 2.1975 0.220946 1.96653C0.486128 1.7354 0.885307 1.76667 1.11269 2.03622L3.98815 5.44621L9.95178 0.158432C10.2151 -0.0749223 10.6144 -0.0473008 10.8441 0.220184C11.0737 0.487827 11.0465 0.893736 10.7832 1.12725L4.33892 6.84157C4.22366 6.94365 4.07608 7 3.92318 7Z"
+                fill="#0083FF"
+              />
+            </svg>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-[6px] text-sm">
-        {formatAmount(token?.balance)}
-        {value === token?.address && (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="11"
-            height="7"
-            viewBox="0 0 11 7"
-            fill="none"
-          >
-            <path
-              d="M3.92318 7C3.73859 7 3.56305 6.91809 3.44295 6.77554L0.15223 2.87296C-0.0750014 2.60341 -0.0443915 2.1975 0.220946 1.96653C0.486128 1.7354 0.885307 1.76667 1.11269 2.03622L3.98815 5.44621L9.95178 0.158432C10.2151 -0.0749223 10.6144 -0.0473008 10.8441 0.220184C11.0737 0.487827 11.0465 0.893736 10.7832 1.12725L4.33892 6.84157C4.22366 6.94365 4.07608 7 3.92318 7Z"
-              fill="#0083FF"
-            />
-          </svg>
-        )}
-      </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+TokenItem.displayName = "TokenItem";

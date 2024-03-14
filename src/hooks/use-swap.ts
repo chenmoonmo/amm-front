@@ -161,6 +161,9 @@ export const useSwap = () => {
           queryKey: ["tokenInfo", token1, publicKey],
         }),
         client.invalidateQueries({
+          queryKey: ["balances", publicKey]
+        }),
+        client.invalidateQueries({
           queryKey: ["liquidity", publicKey],
         }),
       ]);

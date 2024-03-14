@@ -78,6 +78,9 @@ export const useRemoveLiq = (token0: string, token1: string) => {
           queryKey: ["tokenInfo", token1, publicKey],
         }),
         client.invalidateQueries({
+          queryKey: ["balances", publicKey]
+        }),
+        client.invalidateQueries({
           queryKey: ["liquidity", publicKey],
         }),
       ]);

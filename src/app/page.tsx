@@ -28,10 +28,18 @@ export default function Home() {
 
   console.log(poolInfo);
 
-  const enabled = useMemo(
-    () => poolInfo && tokenInAmount && tokenOutAmount,
-    [poolInfo, tokenInAmount, tokenOutAmount]
-  );
+  const [buttonText, enabled] = useMemo(() => {
+    if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {
+      return ["Insufficient balance", false];
+    }
+    if (!tokenInAmount || !tokenOutAmount) {
+      return ["Enter an amount", false];
+    }
+    if (!poolInfo) {
+      return ["No pool found", false];
+    }
+    return ["Swap", true];
+  }, [poolInfo, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);
 
   return (
     <main className="w-full flex flex-col items-center mt-20">
@@ -104,7 +112,7 @@ export default function Home() {
           className="w-full !mt-4"
           onClick={() => swap()}
         >
-          Swap
+          {buttonText}
         </Button>
       </Card>
     </main>

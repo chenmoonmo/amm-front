@@ -6,7 +6,7 @@ export const getTokenInfo = async (
   address: string,
   connection: web3.Connection
 ) => {
-  let name: string, symbol: string, mintAddress: string;
+  let name: string, symbol: string;
 
   // token 2022
   const metaplex = new Metaplex(connection);
