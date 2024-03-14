@@ -1,14 +1,14 @@
 import { Button, Card, Heading } from "@radix-ui/themes";
-import { FC } from "react";
-import { useLiquidities } from "@/hooks/use-liquidities";
+import { memo } from "react";
+import { Liquidity } from "@/hooks/use-liquidities";
 import { RemoveLpDialog } from "./remove-lp-dialog";
 import { foramtPrecent, formatAmount } from "@/utils/format";
 
-type LiqCardProps<T = ReturnType<typeof useLiquidities>["data"]> = {
-  data: T extends (infer U)[] ? U : T;
+type LiqCardProps = {
+  data: Liquidity;
 };
 
-export const LiqCard: FC<LiqCardProps> = ({ data }) => {
+export const LiqCard = memo(({ data }: LiqCardProps) => {
   return (
     <Card size="3" className="w-[450px] mt-6">
       <Heading size="2" weight="medium">
@@ -26,14 +26,13 @@ export const LiqCard: FC<LiqCardProps> = ({ data }) => {
         <div>Share of pool</div>
         <div>{foramtPrecent(data?.share! * 100)}%</div>
       </div>
-      <RemoveLpDialog
-        token0={data?.token0.toBase58()!}
-        token1={data?.token1.toBase58()!}
-      >
+      <RemoveLpDialog data={data}>
         <Button size="3" className="w-full !mt-4">
           Remove
         </Button>
       </RemoveLpDialog>
     </Card>
   );
-};
+});
+
+LiqCard.displayName = "LiqCard";

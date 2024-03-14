@@ -3,6 +3,21 @@ import { useDexProgram } from "./use-dex-program";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getPoolPDAs, getTokenInfos } from "@/utils";
 import { useBalances } from "./use-balances";
+import { PublicKey } from "@solana/web3.js";
+
+export type Liquidity = {
+  userToken0: number;
+  userToken1: number;
+  share: number;
+  token0: string;
+  token1: string;
+  token0Symbol?: string;
+  token1Symbol?: string;
+  poolName: string;
+  pdas: ReturnType<typeof getPoolPDAs>;
+  userLPBalance: number;
+  lpAmount: number;
+};
 
 export const useLiquidities = () => {
   const { publicKey } = useWallet();
@@ -21,13 +36,13 @@ export const useLiquidities = () => {
 
         const { vault0, vault1, poolMint } = pdas;
 
-        const userLpBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
+        const userLPBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
 
-        if (userLpBalance === 0) {
+        if (userLPBalance === 0) {
           return null;
         }
 
-        const lpBalance = totalAmountMinted / 10 ** 9;
+        const lpAmount = totalAmountMinted / 10 ** 9;
 
         const [token0Balance, token1Balance] = (
           await Promise.all(
@@ -37,7 +52,7 @@ export const useLiquidities = () => {
           )
         ).map((item) => item.value);
 
-        const share = userLpBalance / lpBalance;
+        const share = userLPBalance / lpAmount;
 
         const userToken0 = share * token0Balance.uiAmount!;
         const userToken1 = share * token1Balance.uiAmount!;
@@ -47,17 +62,21 @@ export const useLiquidities = () => {
           connection
         );
 
-        return {
+        let data: Liquidity = {
           userToken0,
           userToken1,
           share,
-          token0: mint0,
-          token1: mint1,
+          token0: mint0.toBase58(),
+          token1: mint1.toBase58(),
           token0Symbol: token0Info?.symbol,
           token1Symbol: token1Info?.symbol,
           poolName: `${token0Info?.symbol}/${token1Info?.symbol}`,
           pdas,
+          userLPBalance,
+          lpAmount,
         };
+
+        return data;
       });
 
       const res = await Promise.all(promises);

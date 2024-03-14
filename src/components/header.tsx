@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WalletButton } from "./solana-provider";
+import { memo } from "react";
 
 const Navs = [
   {
@@ -14,7 +15,7 @@ const Navs = [
   },
 ];
 
-export const Header = () => {
+export const Header = memo(() => {
   const pathname = usePathname();
 
   return (
@@ -37,4 +38,6 @@ export const Header = () => {
       <WalletButton />
     </header>
   );
-};
+});
+
+Header.displayName = "Header";

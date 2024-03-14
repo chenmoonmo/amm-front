@@ -13,7 +13,6 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { ReactNode, useCallback, useMemo } from "react";
 import { toWalletAdapterNetwork, useCluster } from "./cluster-data-access";
-
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 export const WalletButton = dynamic(

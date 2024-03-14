@@ -5,20 +5,23 @@ import * as token from "@solana/spl-token";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { getPoolPDAs } from "@/utils";
+import { PublicKey } from "@solana/web3.js";
 
 export const useRemoveLiq = (token0: string, token1: string) => {
   const client = useQueryClient();
-  const { publicKey } = useWallet();
   const program = useDexProgram();
-  const { connection } = useConnection();
 
-  const { data: poolInfo } = usePoolInfo(token0, token1);
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
 
   const { mutateAsync } = useMutation({
     mutationKey: ["removeLiq", token0, token1],
     mutationFn: async (lpAmount: number) => {
-      const { poolMint, poolState, authority, vault0, vault1 } =
-        poolInfo?.pdas!;
+      const { poolMint, poolState, authority, vault0, vault1 } = getPoolPDAs(
+        token0,
+        token1
+      );
 
       const userPoolAta = await token.getAssociatedTokenAddress(
         poolMint,
@@ -26,12 +29,12 @@ export const useRemoveLiq = (token0: string, token1: string) => {
       );
 
       const user0 = await token.getAssociatedTokenAddress(
-        poolInfo?.token0!,
+        new PublicKey(token0),
         publicKey!
       );
 
       const user1 = await token.getAssociatedTokenAddress(
-        poolInfo?.token1!,
+        new PublicKey(token1),
         publicKey!
       );
 
@@ -41,7 +44,6 @@ export const useRemoveLiq = (token0: string, token1: string) => {
         const latestBlockhash = await connection.getLatestBlockhash();
 
         signature = await program.methods
-          // TODO: 计算移除的 LP 数量
           .removeLiquidity(new BN(lpAmount * 10 ** 9))
           .accounts({
             poolAuthority: authority,
@@ -54,6 +56,7 @@ export const useRemoveLiq = (token0: string, token1: string) => {
             user1,
           })
           .rpc();
+
         await connection.confirmTransaction(
           { signature, ...latestBlockhash },
           "confirmed"
@@ -78,7 +81,7 @@ export const useRemoveLiq = (token0: string, token1: string) => {
           queryKey: ["tokenInfo", token1, publicKey],
         }),
         client.invalidateQueries({
-          queryKey: ["balances", publicKey]
+          queryKey: ["balances", publicKey],
         }),
         client.invalidateQueries({
           queryKey: ["liquidity", publicKey],
@@ -91,7 +94,6 @@ export const useRemoveLiq = (token0: string, token1: string) => {
   });
 
   return {
-    poolInfo,
     removeLiq: mutateAsync,
   };
 };

@@ -30,7 +30,7 @@ const variants = {
 
 const tokensAddressAtom = atom<string[]>([]);
 
-export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
+export const TokenSelector = memo(({ value, onChange }: TokenSelectProps) => {
   const [tokensAddress, setTokensAddress] = useAtom(tokensAddressAtom);
 
   const [open, setOpen] = useState(false);
@@ -177,7 +177,9 @@ export const TokenSelector: FC<TokenSelectProps> = ({ value, onChange }) => {
       </Dialog.Content>
     </Dialog.Root>
   );
-};
+});
+
+TokenSelector.displayName = "TokenSelector";
 
 export const TokenItem = memo(
   ({
