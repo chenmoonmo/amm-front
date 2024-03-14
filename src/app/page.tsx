@@ -1,6 +1,5 @@
 "use client";
 import { TokenSelector } from "@/components/token-selector";
-import { useBalances } from "@/hooks/use-balances";
 import { useSwap } from "@/hooks/use-swap";
 import { formatAmount, formatInput } from "@/utils/format";
 import { Button, Card } from "@radix-ui/themes";
@@ -23,10 +22,6 @@ export default function Home() {
     swap,
     switchToken,
   } = useSwap();
-
-  useBalances();
-
-  console.log(poolInfo);
 
   const [buttonText, enabled] = useMemo(() => {
     if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {

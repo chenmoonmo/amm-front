@@ -9,6 +9,7 @@ import { formatInput, formatAmount, foramtPrecent } from "@/utils/format";
 
 export default function Home() {
   const {
+    isPending,
     poolInfo,
     token0,
     token1,
@@ -41,18 +42,21 @@ export default function Home() {
     if (!(token0 && token1 && token0Amount && token1Amount)) {
       return ["Enter an amount", false];
     }
-
     if (
       +token0Amount > (token0Info?.balance ?? 0) ||
       +token1Amount > (token1Info?.balance ?? 0)
     ) {
       return ["Insufficient balance", false];
     }
+    if (isPending) {
+      return ["Pending", false];
+    }
     if (!poolInfo) {
       return ["Create Pool", true];
     }
     return ["Add Liquidity", true];
   }, [
+    isPending,
     poolInfo,
     token0,
     token0Amount,

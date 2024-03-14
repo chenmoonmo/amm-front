@@ -7,22 +7,19 @@ export const usePool = (token0: string, token1: string) => {
   return useQuery({
     queryKey: ["pool-state", token0, token1],
     queryFn: async () => {
-      let pdas = getPoolPDAs(token0, token1);
-      // if pair of token0- token1 exists, account will not be null
-      const account = await connection.getAccountInfo(pdas.poolState);
+      let pdas = [getPoolPDAs(token0, token1), getPoolPDAs(token1, token0)];
+      const accounts = await connection.getMultipleAccountsInfo(
+        pdas.map((pda) => pda.poolState)
+      );
 
-      if (account !== null) {
-        // if token0-token1 does not exist, try token1-token0
-        return pdas;
+      if (accounts[0] !== null) {
+        return pdas[0];
+      } else if (accounts[1] !== null) {
+        return pdas[1];
       } else {
-        let pdas = getPoolPDAs(token1, token0);
-        // if pair of token0- token1 exists, account will not be null
-        const account = await connection.getAccountInfo(pdas.poolState);
-        if (account !== null) {
-          return pdas;
-        }
+        return null;
       }
-      return null;
     },
+    enabled: !!token0 && !!token1,
   });
 };

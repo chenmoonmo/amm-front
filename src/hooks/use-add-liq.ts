@@ -26,7 +26,8 @@ export const useAddLiq = () => {
   const { data: token0Info } = useBalance(token0);
   const { data: token1Info } = useBalance(token1);
 
-  const { data: poolInfo } = usePoolInfo(token0, token1);
+  const { data: poolInfo, isPending } = usePoolInfo(token0, token1);
+
   // if poolInfo is null then the pool does not exist
   const isPoolInitialized = useMemo(() => !!poolInfo, [poolInfo]);
 
@@ -82,6 +83,9 @@ export const useAddLiq = () => {
   const handleToken0Change = (token: string) => {
     if (token1 === token) {
       setToken1(token0);
+      let temp = token0Amount;
+      setToken0Amount(token1Amount);
+      setToken1Amount(temp);
     }
     setToken0(token);
   };
@@ -89,6 +93,9 @@ export const useAddLiq = () => {
   const handleToken1Change = (token: string) => {
     if (token0 === token) {
       setToken0(token1);
+      let temp = token0Amount;
+      setToken0Amount(token1Amount);
+      setToken1Amount(temp);
     }
     setToken1(token);
   };
@@ -218,6 +225,7 @@ export const useAddLiq = () => {
   });
 
   return {
+    isPending,
     poolInfo,
     token0,
     setToken0: handleToken0Change,
