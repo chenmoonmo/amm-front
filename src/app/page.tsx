@@ -102,7 +102,8 @@ export default function Home() {
         </label>
         {price && (
           <div className="text-sm bg-[#2C2F38] mt-4 py-2 px-3 rounded-md">
-            1 {tokenInInfo?.symbol} = {price} {tokenOutInfo?.symbol}
+            1 {tokenOutInfo?.symbol} = {formatAmount(price)}{" "}
+            {tokenInInfo?.symbol}
           </div>
         )}
         <Button

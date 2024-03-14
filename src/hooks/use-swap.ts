@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePoolInfo } from "./use-pool-info";
 import { BN } from "@coral-xyz/anchor";
 import { useDexProgram } from "./use-dex-program";
@@ -56,7 +56,6 @@ export const useSwap = () => {
     setLastInput(1);
 
     if (poolInfo) {
-      // TODO:
       const { token0Amount, token1Amount, token0 } = poolInfo;
       const k = token0Amount * token1Amount;
       // 用户支付的 token0 数量  K/(total_Token0-Y1) - total_Token1
@@ -73,12 +72,22 @@ export const useSwap = () => {
   };
 
   const price = useMemo(() => {
+    if (!poolInfo) return null;
     if (tokenOutAmount && tokenInAmount) {
-      return +tokenOutAmount / +tokenInAmount;
+      const { token0Amount, token1Amount, token0 } = poolInfo;
+      if (token0.equals(new web3.PublicKey(tokenIn))) {
+        let x1 = token0Amount + +tokenInAmount;
+        let y1 = token1Amount - +tokenOutAmount;
+        return x1 / y1;
+      } else {
+        let x1 = token1Amount + +tokenInAmount;
+        let y1 = token0Amount - +tokenOutAmount;
+        return x1 / y1;
+      }
     } else {
       return null;
     }
-  }, [tokenInAmount, tokenOutAmount]);
+  }, [poolInfo, tokenIn, tokenInAmount, tokenOutAmount]);
 
   const { mutateAsync: handleSwap } = useMutation({
     mutationFn: async () => {
@@ -161,7 +170,7 @@ export const useSwap = () => {
           queryKey: ["tokenInfo", token1, publicKey],
         }),
         client.invalidateQueries({
-          queryKey: ["balances", publicKey]
+          queryKey: ["balances", publicKey],
         }),
         client.invalidateQueries({
           queryKey: ["liquidity", publicKey],
