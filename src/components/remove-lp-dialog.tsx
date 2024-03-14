@@ -14,8 +14,9 @@ export const RemoveLpDialog = memo(
     const { removeLiq } = useRemoveLiq(data.token0, data.token1);
 
     const [token0Receive, token1Receive] = useMemo(() => {
-      const { userToken0, userToken1, userLPBalance, lpAmount } = data;
-      const removePercent = (lpAmount / userLPBalance) * (removeLp / 100);
+      const { userToken0, userToken1 } = data;
+      const removePercent = removeLp / 100;
+
       const token0Receive = removePercent * userToken0;
       const token1Receive = removePercent * userToken1;
 

@@ -8,6 +8,8 @@ export const MyLiquidity = memo(() => {
 
   const filtedLiquidities = myLiquidities?.filter((l) => l !== null);
 
+  console.log(filtedLiquidities);
+
   return (
     <>
       {filtedLiquidities?.map((item) => {
