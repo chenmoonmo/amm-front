@@ -33,12 +33,16 @@ export const useAddLiq = () => {
   const isPoolInitialized = useMemo(() => !!poolInfo, [poolInfo]);
 
   const shareOfPool = useMemo(() => {
-    if (!isPoolInitialized) return 1;
+    if (!poolInfo) return 1;
 
-    let percent = +token0Amount / (poolInfo?.token0Amount! + +token0Amount);
+    let x = poolInfo.token0.equals(new web3.PublicKey(token0))
+      ? poolInfo.token0Amount
+      : poolInfo.token1Amount;
+
+    let percent = +token0Amount / (x + +token0Amount);
 
     return Math.min(percent, 1);
-  }, [isPoolInitialized, poolInfo, token0Amount]);
+  }, [poolInfo, token0, token0Amount]);
 
   const handleToken0AmountChange = (amount: string) => {
     setToken0Amount(amount);
