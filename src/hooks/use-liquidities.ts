@@ -4,6 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getPoolPDAs, getTokenInfos } from "@/utils";
 import { useBalances } from "./use-balances";
 import { PublicKey } from "@solana/web3.js";
+import { useMemo } from "react";
 
 export type Liquidity = {
   userToken0: number;
@@ -25,7 +26,7 @@ export const useLiquidities = () => {
   const program = useDexProgram();
   const { data: balances } = useBalances();
 
-  return useQuery({
+  const { data: liquidities } = useQuery({
     queryKey: ["liquidity", publicKey],
     queryFn: async () => {
       const pools = await program.account.poolState.all();
@@ -34,13 +35,7 @@ export const useLiquidities = () => {
 
         const pdas = getPoolPDAs(mint0.toBase58(), mint1.toBase58());
 
-        const { vault0, vault1, poolMint } = pdas;
-
-        const userLPBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
-
-        if (userLPBalance === 0) {
-          return null;
-        }
+        const { vault0, vault1 } = pdas;
 
         const lpAmount = totalAmountMinted / 10 ** 9;
 
@@ -52,36 +47,45 @@ export const useLiquidities = () => {
           )
         ).map((item) => item.value);
 
-        const share = userLPBalance / lpAmount;
-
-        const userToken0 = share * token0Balance.uiAmount!;
-        const userToken1 = share * token1Balance.uiAmount!;
-
         const [token0Info, token1Info] = await getTokenInfos(
           [mint0, mint1],
           connection
         );
 
-        let data: Liquidity = {
-          userToken0,
-          userToken1,
-          share,
+        return {
           token0: mint0.toBase58(),
           token1: mint1.toBase58(),
           token0Symbol: token0Info?.symbol,
           token1Symbol: token1Info?.symbol,
           poolName: `${token0Info?.symbol}/${token1Info?.symbol}`,
           pdas,
-          userLPBalance,
           lpAmount,
+          token0Amount: token0Balance.uiAmount!,
+          token1Amount: token1Balance.uiAmount!,
         };
-
-        return data;
       });
 
       const res = await Promise.all(promises);
       return res.filter((item) => item !== null);
     },
-    enabled: !!publicKey && !!program && !!balances,
+    enabled: !!publicKey && !!program,
   });
+
+  const myLiquidities = useMemo(() => {
+    return liquidities
+      ?.map((item) => {
+        const { token0Amount, token1Amount, ...rest } = item;
+        const { poolMint } = item.pdas;
+        const userLPBalance = balances?.[poolMint.toBase58()]?.balance ?? 0;
+        const share = userLPBalance / rest.lpAmount;
+        const userToken0 = share * token0Amount;
+        const userToken1 = share * token1Amount;
+        return { ...rest, userLPBalance, share, userToken0, userToken1 };
+      })
+      .filter((item) => item.userLPBalance > 0);
+  }, [balances, liquidities]);
+
+  return {
+    data: myLiquidities,
+  };
 };

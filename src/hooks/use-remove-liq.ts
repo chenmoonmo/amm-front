@@ -1,12 +1,11 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useDexProgram } from "./use-dex-program";
-import { usePoolInfo } from "./use-pool-info";
 import * as token from "@solana/spl-token";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 import { getPoolPDAs } from "@/utils";
 import { PublicKey } from "@solana/web3.js";
+import toast from "react-hot-toast";
 
 type UseRemoveLiqType = {
   token0: string;
@@ -24,7 +23,6 @@ export const useRemoveLiq = ({
 
   const { publicKey } = useWallet();
   const { connection } = useConnection();
-
   const { mutateAsync } = useMutation({
     mutationKey: ["removeLiq", token0, token1],
     mutationFn: async (lpAmount: number) => {
@@ -78,10 +76,9 @@ export const useRemoveLiq = ({
         return;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // TODO: success ui
-      onSuccess?.();
-      return Promise.all([
+      await Promise.all([
         client.invalidateQueries({
           queryKey: ["pool-info", token0, token1],
         }),
@@ -98,6 +95,9 @@ export const useRemoveLiq = ({
           queryKey: ["liquidity", publicKey],
         }),
       ]);
+      setTimeout(() => {
+        onSuccess?.();
+      }, 500);
     },
     onError: (error) => {
       toast.error(`Transaction failed! ${error}`);
