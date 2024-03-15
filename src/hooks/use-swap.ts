@@ -43,14 +43,17 @@ export const useSwap = () => {
 
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
+      const [currentInDecimals, currentOutDecimals] = token0.equals(
+        new web3.PublicKey(tokenIn)
+      )
+        ? [tokenInInfo?.decimals, tokenOutInfo?.decimals]
+        : [tokenOutInfo?.decimals, tokenInInfo?.decimals];
+
       let x = BigInt(token0Amount * 10 ** 18);
       let y = BigInt(token1Amount * 10 ** 18);
       let k = x * y;
-      let a = BigInt(+amount * 10 ** 18);
 
-      const currentOutDecimals = token0.equals(new web3.PublicKey(tokenIn))
-        ? tokenOutInfo?.decimals
-        : tokenInInfo?.decimals;
+      let a = BigInt(+formatAmount(amount, currentInDecimals) * 10 ** 18);
 
       const newTokenOutAmount = token0.equals(new web3.PublicKey(tokenIn))
         ? y - k / (x + a)
@@ -68,18 +71,20 @@ export const useSwap = () => {
 
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
+      const [currentInDecimals, currentOutDecimals] = token0.equals(
+        new web3.PublicKey(tokenIn)
+      )
+        ? [tokenInInfo?.decimals, tokenOutInfo?.decimals]
+        : [tokenOutInfo?.decimals, tokenInInfo?.decimals];
+
       let x = BigInt(token0Amount * 10 ** 18);
       let y = BigInt(token1Amount * 10 ** 18);
       let k = x * y;
-      let a = BigInt(+amount * 10 ** 18);
+      let a = BigInt(+formatAmount(amount, currentOutDecimals) * 10 ** 18);
       // 用户支付的 token0 数量  K/(total_Token0-Y1) - total_Token1
 
       // tokenin === token 0, tokenout === token 1,tokenin === token 0
       // tokenin === token 1,tokenout ===token0, tokenin ===token1
-
-      const currentInDecimals = token0.equals(new web3.PublicKey(tokenIn))
-        ? tokenInInfo?.decimals
-        : tokenOutInfo?.decimals;
 
       const newTokenInAmout = token0.equals(new web3.PublicKey(tokenIn))
         ? k / (y - a) - x

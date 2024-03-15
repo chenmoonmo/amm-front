@@ -3,7 +3,7 @@ import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
 import { getPoolPDAs } from "@/utils";
 import { usePoolInfo } from "./use-pool-info";
-import { use, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useBalance } from "./use-balance";
 import { useDexProgram } from "./use-dex-program";
@@ -62,10 +62,13 @@ export const useAddLiq = () => {
         ? [y, x]
         : [x, y];
 
-      let a = BigInt(+amount * 10 ** 18);
-      let decimalsY = poolInfo?.token0.equals(new web3.PublicKey(token0))
-        ? token1Info?.decimals
-        : token0Info?.decimals;
+      let [decimalsX, decimalsY] = poolInfo?.token0.equals(
+        new web3.PublicKey(token0)
+      )
+        ? [token0Info?.decimals, token1Info?.decimals]
+        : [token1Info?.decimals, token0Info?.decimals];
+
+      let a = BigInt(+formatAmount(amount, decimalsX) * 10 ** 18);
 
       let y1 = Number((a * x) / y) / 10 ** 18;
 
@@ -91,11 +94,13 @@ export const useAddLiq = () => {
         ? [x, y]
         : [y, x];
 
-      let a = BigInt(+amount * 10 ** 18);
+      let [decimalsX, decimalsY] = poolInfo?.token0.equals(
+        new web3.PublicKey(token0)
+      )
+        ? [token0Info?.decimals, token1Info?.decimals]
+        : [token1Info?.decimals, token0Info?.decimals];
 
-      let decimalsX = poolInfo?.token0.equals(new web3.PublicKey(token0))
-        ? token0Info?.decimals
-        : token1Info?.decimals;
+      let a = BigInt(+formatAmount(amount, decimalsY) * 10 ** 18);
 
       let x1 = Number((a * x) / y) / 10 ** 18;
 
