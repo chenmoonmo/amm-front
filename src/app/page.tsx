@@ -24,21 +24,22 @@ export default function Home() {
   } = useSwap();
 
   const [buttonText, enabled] = useMemo(() => {
-    if (!tokenInAmount || !tokenOutAmount) {
+    if (!+tokenInAmount || !+tokenOutAmount) {
       return ["Enter an amount", false];
     }
     if (!poolInfo) {
       return ["No pool found", false];
     }
+    // 如果数额小于 0，则流动性不足
+    if (+tokenInAmount < 0 || (price ?? 0) < 0) {
+      return ["Insufficient liquidity", false];
+    }
     if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {
       return ["Insufficient balance", false];
     }
-    // 如果数额小于 0，则流动性不足
-    if (+tokenInAmount <= 0) {
-      return ["Insufficient liquidity", false];
-    }
+
     return ["Swap", true];
-  }, [poolInfo, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);
+  }, [poolInfo, price, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);
 
   useEffect(() => {
     console.log("poolInfo", poolInfo);

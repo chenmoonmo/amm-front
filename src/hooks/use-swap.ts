@@ -228,7 +228,7 @@ export const useSwap = () => {
 
     if (lastInput === 0) {
       // tokenoutamount = tokeninamoout
-      let a = BigInt(+tokenInAmount * 10 ** 18);
+      let a = BigInt(Math.floor(+tokenInAmount * 10 ** 18));
       setTokenOutAmount(tokenInAmount);
 
       const newTokenInAmout = token0.equals(new web3.PublicKey(newIn))
@@ -239,7 +239,7 @@ export const useSwap = () => {
     } else {
       // tokeninamount = tokenoutamount
 
-      let a = BigInt(+tokenOutAmount * 10 ** 18);
+      let a = BigInt(Math.floor(+tokenOutAmount * 10 ** 18));
 
       setTokenInAmount(tokenOutAmount);
 
