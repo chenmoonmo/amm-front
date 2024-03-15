@@ -41,6 +41,11 @@ export const useSwap = () => {
     setTokenInAmount(amount);
     setLastInput(0);
 
+    if (amount === "") {
+      setTokenOutAmount("");
+      return;
+    }
+
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
       const [currentInDecimals, currentOutDecimals] = token0.equals(
@@ -68,6 +73,11 @@ export const useSwap = () => {
   const handleTokenOutAmountChange = (amount: string) => {
     setTokenOutAmount(amount);
     setLastInput(1);
+
+    if (amount === "") {
+      setTokenInAmount("");
+      return;
+    }
 
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
