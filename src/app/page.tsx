@@ -24,14 +24,14 @@ export default function Home() {
   } = useSwap();
 
   const [buttonText, enabled] = useMemo(() => {
-    if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {
-      return ["Insufficient balance", false];
-    }
     if (!tokenInAmount || !tokenOutAmount) {
       return ["Enter an amount", false];
     }
     if (!poolInfo) {
       return ["No pool found", false];
+    }
+    if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {
+      return ["Insufficient balance", false];
     }
     return ["Swap", true];
   }, [poolInfo, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);

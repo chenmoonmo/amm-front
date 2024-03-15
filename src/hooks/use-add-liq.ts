@@ -3,12 +3,13 @@ import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
 import { getPoolPDAs } from "@/utils";
 import { usePoolInfo } from "./use-pool-info";
-import { useMemo, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useBalance } from "./use-balance";
 import { useDexProgram } from "./use-dex-program";
 import { BN } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
+import { formatAmount } from "@/utils/format";
 
 export const useAddLiq = () => {
   const client = useQueryClient();
@@ -49,15 +50,26 @@ export const useAddLiq = () => {
 
     if (isPoolInitialized) {
       const { token0Amount, token1Amount } = poolInfo!;
+
+      let x = BigInt(token0Amount * 10 ** 18);
+      let y = BigInt(token1Amount * 10 ** 18);
+
       // X / Y = total_TokenA / total_TokenB
       // y = (X * total_TokenB) / total_TokenA
       // x = (Y * total_TokenA) / total_TokenB
 
-      const [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
-        ? [token1Amount, token0Amount]
-        : [token0Amount, token1Amount];
+      [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? [y, x]
+        : [x, y];
 
-      setToken1Amount(((+amount * x) / y).toString());
+      let a = BigInt(+amount * 10 ** 18);
+      let decimalsY = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? token1Info?.decimals
+        : token0Info?.decimals;
+
+      let y1 = Number((a * x) / y) / 10 ** 18;
+
+      setToken1Amount(formatAmount(y1, decimalsY));
     }
   };
 
@@ -72,11 +84,22 @@ export const useAddLiq = () => {
     if (isPoolInitialized) {
       const { token0Amount, token1Amount } = poolInfo!;
 
-      const [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
-        ? [token0Amount, token1Amount]
-        : [token1Amount, token0Amount];
+      let x = BigInt(token0Amount * 10 ** 18);
+      let y = BigInt(token1Amount * 10 ** 18);
 
-      setToken0Amount(((+amount * x) / y).toString());
+      [x, y] = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? [x, y]
+        : [y, x];
+
+      let a = BigInt(+amount * 10 ** 18);
+
+      let decimalsX = poolInfo?.token0.equals(new web3.PublicKey(token0))
+        ? token0Info?.decimals
+        : token1Info?.decimals;
+
+      let x1 = Number((a * x) / y) / 10 ** 18;
+
+      setToken0Amount(formatAmount(x1, decimalsX));
     }
   };
 
@@ -151,21 +174,26 @@ export const useAddLiq = () => {
       }
 
       // token0 和 pool token0 是否一致， 否则交换方向 , 只有在池子已经存在的时候才需要交换
+      console.log(
+        token0Amount,
+        token1Amount,
+        token0Info?.decimals,
+        token1Info?.decimals
+      );
+
       let amounts = [
         new BN(+token0Amount * 10 ** token0Info?.decimals!),
         new BN(+token1Amount * 10 ** token1Info?.decimals!),
       ];
+
       let userATAs = [token0Info?.ataAddress!, token1Info?.ataAddress!];
 
       if (
         isPoolInitialized &&
         !poolInfo!.token0.equals(new web3.PublicKey(token0))
       ) {
-        amounts = [
-          new BN(+token1Amount * 10 ** token1Info?.decimals!),
-          new BN(+token0Amount * 10 ** token0Info?.decimals!),
-        ];
-        userATAs = [token1Info?.ataAddress!, token0Info?.ataAddress!];
+        amounts = amounts.reverse();
+        userATAs = userATAs.reverse();
       }
 
       const addLiquidityInstruction = await program.methods

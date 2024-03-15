@@ -8,9 +8,11 @@ import * as token from "@solana/spl-token";
 import * as web3 from "@solana/web3.js";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { formatAmount } from "@/utils/format";
 
 export const useSwap = () => {
   const client = useQueryClient();
+  2;
   const program = useDexProgram();
   const { connection } = useConnection();
   const { sendTransaction, publicKey } = useWallet();
@@ -41,13 +43,22 @@ export const useSwap = () => {
 
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
-      const k = token0Amount * token1Amount;
+      let x = BigInt(token0Amount * 10 ** 18);
+      let y = BigInt(token1Amount * 10 ** 18);
+      let k = x * y;
+      let a = BigInt(+amount * 10 ** 18);
+
+      const currentOutDecimals = token0.equals(new web3.PublicKey(tokenIn))
+        ? tokenOutInfo?.decimals
+        : tokenInInfo?.decimals;
 
       const newTokenOutAmount = token0.equals(new web3.PublicKey(tokenIn))
-        ? token1Amount - k / (token0Amount + +amount)
-        : token0Amount - k / (token1Amount + +amount);
+        ? y - k / (x + a)
+        : x - k / (y + a);
 
-      setTokenOutAmount(newTokenOutAmount.toString());
+      setTokenOutAmount(
+        formatAmount(Number(newTokenOutAmount) / 10 ** 18, currentOutDecimals)
+      );
     }
   };
 
@@ -57,17 +68,26 @@ export const useSwap = () => {
 
     if (poolInfo) {
       const { token0Amount, token1Amount, token0 } = poolInfo;
-      const k = token0Amount * token1Amount;
+      let x = BigInt(token0Amount * 10 ** 18);
+      let y = BigInt(token1Amount * 10 ** 18);
+      let k = x * y;
+      let a = BigInt(+amount * 10 ** 18);
       // 用户支付的 token0 数量  K/(total_Token0-Y1) - total_Token1
 
       // tokenin === token 0, tokenout === token 1,tokenin === token 0
       // tokenin === token 1,tokenout ===token0, tokenin ===token1
-      const newTokenInAmout = token0.equals(new web3.PublicKey(tokenIn))
-        ? k / (token1Amount - +amount) - token0Amount
-        : k / (token0Amount - +amount) - token1Amount;
-      // TODO: 计算精度可能会有误差
 
-      setTokenInAmount(newTokenInAmout.toString());
+      const currentInDecimals = token0.equals(new web3.PublicKey(tokenIn))
+        ? tokenInInfo?.decimals
+        : tokenOutInfo?.decimals;
+
+      const newTokenInAmout = token0.equals(new web3.PublicKey(tokenIn))
+        ? k / (y - a) - x
+        : k / (x - a) - y;
+
+      setTokenInAmount(
+        formatAmount(Number(newTokenInAmout) / 10 ** 18, currentInDecimals)
+      );
     }
   };
 
@@ -187,28 +207,32 @@ export const useSwap = () => {
     if (!poolInfo) return;
     const [newIn, newOut] = [tokenOut, tokenIn];
     const { token0Amount, token1Amount, token0 } = poolInfo!;
-    const k = token0Amount * token1Amount;
+    let x = BigInt(token0Amount * 10 ** 18);
+    let y = BigInt(token1Amount * 10 ** 18);
+    const k = x * y;
 
     if (lastInput === 0) {
       // tokenoutamount = tokeninamoout
-      let amount = tokenInAmount;
-      setTokenOutAmount(amount);
+      let a = BigInt(+tokenInAmount * 10 ** 18);
+      setTokenOutAmount(tokenInAmount);
 
       const newTokenInAmout = token0.equals(new web3.PublicKey(newIn))
-        ? k / (token1Amount - +amount) - token0Amount
-        : k / (token0Amount - +amount) - token1Amount;
+        ? k / (y - a) - x
+        : k / (x - a) - y;
 
-      setTokenInAmount(newTokenInAmout.toString());
+      setTokenInAmount((Number(newTokenInAmout) / 10 ** 18).toString());
     } else {
       // tokeninamount = tokenoutamount
-      let amount = tokenOutAmount;
-      setTokenInAmount(amount);
+
+      let a = BigInt(+tokenOutAmount * 10 ** 18);
+
+      setTokenInAmount(tokenOutAmount);
 
       const newTokenOutAmount = token0.equals(new web3.PublicKey(tokenIn))
-        ? token1Amount - k / (token0Amount + +amount)
-        : token0Amount - k / (token1Amount + +amount);
+        ? y - k / (x + a)
+        : x - k / (y + a);
 
-      setTokenOutAmount(newTokenOutAmount.toString());
+      setTokenOutAmount((Number(newTokenOutAmount) / 10 ** 18).toString());
     }
   };
 
