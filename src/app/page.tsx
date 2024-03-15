@@ -33,6 +33,10 @@ export default function Home() {
     if (+tokenInAmount > (tokenInInfo?.balance ?? 0)) {
       return ["Insufficient balance", false];
     }
+    // 如果数额小于 0，则流动性不足
+    if (+tokenInAmount <= 0) {
+      return ["Insufficient liquidity", false];
+    }
     return ["Swap", true];
   }, [poolInfo, tokenInAmount, tokenInInfo?.balance, tokenOutAmount]);
 
