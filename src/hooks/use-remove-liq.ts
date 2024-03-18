@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getPoolPDAs } from "@/utils";
 import { PublicKey } from "@solana/web3.js";
 import toast from "react-hot-toast";
+import { fomtDecimal } from "@/utils/decimal";
 
 type UseRemoveLiqType = {
   token0: string;
@@ -52,7 +53,7 @@ export const useRemoveLiq = ({
         const latestBlockhash = await connection.getLatestBlockhash();
 
         signature = await program.methods
-          .removeLiquidity(new BN(lpAmount * 10 ** 9))
+          .removeLiquidity(fomtDecimal(lpAmount, 9))
           .accounts({
             poolAuthority: authority,
             poolState,

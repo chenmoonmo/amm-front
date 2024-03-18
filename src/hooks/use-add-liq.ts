@@ -10,6 +10,7 @@ import { useDexProgram } from "./use-dex-program";
 import { BN } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
 import { formatAmount } from "@/utils/format";
+import { fomtDecimal } from "@/utils/decimal";
 
 export const useAddLiq = () => {
   const client = useQueryClient();
@@ -191,8 +192,8 @@ export const useAddLiq = () => {
       );
 
       let amounts = [
-        new BN(+token0Amount * 10 ** token0Info?.decimals!),
-        new BN(+token1Amount * 10 ** token1Info?.decimals!),
+        fomtDecimal(token0Amount, token0Info?.decimals!),
+        fomtDecimal(token1Amount, token1Info?.decimals!),
       ];
 
       let userATAs = [token0Info?.ataAddress!, token1Info?.ataAddress!];

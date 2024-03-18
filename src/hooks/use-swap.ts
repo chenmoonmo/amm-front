@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { usePoolInfo } from "./use-pool-info";
-import { BN } from "@coral-xyz/anchor";
 import { useDexProgram } from "./use-dex-program";
 import { useBalance } from "./use-balance";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -9,6 +8,7 @@ import * as web3 from "@solana/web3.js";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { formatAmount } from "@/utils/format";
+import { fomtDecimal } from "@/utils/decimal";
 
 export const useSwap = () => {
   const client = useQueryClient();
@@ -154,14 +154,14 @@ export const useSwap = () => {
 
       console.log(tokenInAmount, tokenOutAmount, tokenInInfo, tokenOutInfo);
       console.log(
-        new BN(+tokenInAmount * 10 ** tokenInInfo?.decimals!).toString(),
-        new BN(+tokenOutAmount * 10 ** tokenOutInfo?.decimals!).toString()
+        fomtDecimal(+tokenInAmount, tokenInInfo?.decimals!),
+        fomtDecimal(+tokenOutAmount, tokenOutInfo?.decimals!)
       );
 
       let swapInstruction = await program.methods
         .swap(
-          new BN(+tokenInAmount * 10 ** tokenInInfo?.decimals!),
-          new BN(+tokenOutAmount * 10 ** tokenOutInfo?.decimals!)
+          fomtDecimal(+tokenInAmount, tokenInInfo?.decimals!),
+          fomtDecimal(+tokenOutAmount, tokenOutInfo?.decimals!)
         )
         .accounts({
           poolState,
